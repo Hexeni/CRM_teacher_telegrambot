@@ -40,9 +40,10 @@ async def log_password(message: Message, state:FSMContext):
     hash = student_db.get_hash(message.from_user.id)[0]
     dict = await state.get_data()
     if Validator.check_password(dict.get("password"), hash):
-        await message.answer("вхід в акаунт пройшов успішно")
+        await message.answer("вхід в акаунт пройшов успішно", reply_markup=main_rp_keyboard)
         student_db.login_user(message.from_user.id)
         student_db.update_activity(message.from_user.id)
+
         await state.clear()
     else:
         print("wrong")

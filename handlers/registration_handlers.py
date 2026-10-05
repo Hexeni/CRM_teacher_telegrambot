@@ -74,6 +74,11 @@ async def callback_accept(callback: CallbackQuery, state: FSMContext):
 async def callback_refuse(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await state.set_state(Reg.name)
+    await callback.message.answer(
+        "Для початку введи своє прізвище та ім'я:"
+    )
+
+    await callback.answer()
 
 
 

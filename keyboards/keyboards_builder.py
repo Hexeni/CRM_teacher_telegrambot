@@ -1,7 +1,7 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
-from handlers.base_handlers import lesson_db
+from handlers.base_handlers import lesson_db,student_db
 from config import days
 from datetime import date, timedelta, datetime
 
@@ -461,10 +461,58 @@ def confirm_lesson_kb(lesson_id: int):
     return builder.as_markup()
 
 
+def get_student_actions_keyboard(student_id):
+    builder = InlineKeyboardBuilder()
+    username = student_db.get_student(student_id)[2]
 
+    builder.button(
+        text="❌Видалити учня",
+        callback_data=f"delete_student:{student_id}"
+    )
+    builder.button(
+        text="💸Змінити баланс",
+        callback_data=f"change_balance:{student_id}"
+    )
+    builder.button(
+        text="✉️ Написати Учню",
+        url=f"https://t.me/{username}"
+    )
+    builder.button(
+        text="⬅️ Назад до учнів",
+        callback_data=f"students_page_0"
+    )
+    builder.adjust(2)
 
+    return builder.as_markup()
 
+def confirm_delete_student(student_id):
+    builder = InlineKeyboardBuilder()
 
+    builder.button(
+        text="✅ Так, видалити",
+        callback_data=f"confirm_delete_student:{student_id}"
+    )
+    builder.button(
+        text="❌ Скасувати",
+        callback_data=f"student_{student_id}"
+    )
+    builder.adjust(2)
 
+    return builder.as_markup()
 
+def confirm_change_balance(student_id,balance):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(
+        text="✅ Так змінити баланс",
+        callback_data=f"accept_change_balance:{student_id}:{balance}"
+    )
+
+    builder.button(
+        text="❌ Ні, відмінити операцію",
+        callback_data=f"student_{student_id}"
+    )
+
+    builder.adjust(2)
+    return builder.as_markup()
 

@@ -98,7 +98,7 @@ async def show_students_lessons(message: Message):
                 day, time = rest.split(" ")
 
                 formatted = (
-                    f"{number}. 📅 <b>{day}.{month}.{year}</b> о <b>{time[:5]}</b> статус: {"не оплачений 🔴" if lesson[5] == 0 else "оплачений 🟢"}\n"
+                    f"{number}. 📅 <b>{day}.{month}.{year}</b> о <b>{time[:5]}</b> статус: {'не оплачений 🔴' if lesson[5] == 0 else 'оплачений 🟢'}\n"
                     f"   🇺🇦 За Київським часом\n\n"
                 )
                 lesson_message += formatted

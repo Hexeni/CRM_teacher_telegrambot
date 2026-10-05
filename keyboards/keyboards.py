@@ -70,3 +70,4 @@ onetime_lesson_kb = InlineKeyboardMarkup(
         ]
     ]
 )
+

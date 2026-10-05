@@ -576,6 +576,22 @@ class StudentRepo:
             print(f"Помилка отримання інформації про учня: {e}")
             return None
 
+    def change_balance_for_student(self,telegram_id: int, balance: float):
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("""
+                UPDATE students_accounts
+                SET balance = ?
+                WHERE telegr_id = ?
+                """,(balance,telegram_id))
+
+                return cursor.rowcount > 0
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+            return False
+
 
 
 

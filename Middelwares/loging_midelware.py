@@ -21,12 +21,12 @@ class UserLogingMiddleware(BaseMiddleware):
     ) -> Any:
         user = data.get("event_from_user")
 
-        if user is None:
-            return
-
         student_db = StudentRepo("database/bot_db.db")
 
         student_info = student_db.get_student(user.id)
+        if student_info is None:
+            return await handler(event, data)
+
         is_loged = student_info[9]
 
         if not is_loged:

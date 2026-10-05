@@ -9,10 +9,10 @@ from keyboards.keyboards_builder import delay_lesson_keyboard, student_slots_key
 from database.student_repo import StudentRepo
 from database.lesson_repo import LessonRepo
 from datetime import datetime, date
-from keyboards.keyboards_builder import LessonCallback, teacher_aprove_lesson_keyboard, teacher_aprove_cancel_keyboard, SlotCallback, slots_keyboard, SlotChangeCallback, teacher_slot_decision_keyboard, students_for_admin,confirm_lesson_kb
+from keyboards.keyboards_builder import   students_for_admin,confirm_lesson_kb, get_student_actions_keyboard,confirm_delete_student,confirm_change_balance
 from states.delay_lesson_state import Delay
 from states.cancel_lesson_state import Cancel
-from states.admins_states import AdminState
+from states.admins_states import AdminState, ChangeBalanceState
 from handlers.base_handlers import student_db,lesson_db
 from Utilis.Date import Date
 from Utilis.Validator import Validator
@@ -228,7 +228,8 @@ async def change_students_page(callback: CallbackQuery):
 
     students = student_db.show_students()
 
-    await callback.message.edit_reply_markup(
+    await callback.message.edit_text(
+        text="Ось список учнів:",
         reply_markup=students_for_admin(
             students=students,
             page=page
@@ -268,7 +269,7 @@ async def show_students_profile(callback: CallbackQuery):
 ⏭ Наступний урок:
 {lesson_date}
     """
-    await callback.message.edit_text(text=text)
+    await callback.message.edit_text(text=text, reply_markup=get_student_actions_keyboard(student_id))
     await callback.answer()
 
 
@@ -276,6 +277,88 @@ async def show_students_profile(callback: CallbackQuery):
 async def reschedule_lesson(callback: CallbackQuery):
     data = callback.data.split(":")
     lesson_id = data[1]
+
+@router.callback_query(F.data.startswith("delete_student:"))
+async def admin_delete_student(callback: CallbackQuery):
+    data = callback.data.split(":")
+    student_id = data[1]
+
+    await callback.message.edit_text("""
+    ⚠️ Ви впевнені, що хочете видалити цього учня?
+    
+    Цю дію неможливо буде скасувати
+    """, reply_markup=confirm_delete_student(student_id))
+
+
+@router.callback_query(F.data.startswith("confirm_delete_student:"))
+async def confirm_admin_delete_student(callback: CallbackQuery):
+    data = callback.data.split(":")
+    student_id = data[1]
+
+    if student_db.delete_user_info(student_id):
+        await callback.message.edit_text("""
+        Учня і всю його інформацію було видалено👍
+        """)
+    else:
+        await callback.message.edit_text("""
+        Нажаль сталася помикла звернітсья до тех підтримки☹️
+        """)
+
+@router.callback_query(F.data.startswith("change_balance:"))
+async def change_balance(callback:CallbackQuery, state: FSMContext):
+    data = callback.data.split(":")
+    student_id = data[1]
+    await callback.message.answer("""
+    Вкажіть на яку суму ви хочете змінити баланс учня 
+    """)
+    await callback.answer(" ")
+    await state.set_state(ChangeBalanceState.new_balance)
+    await state.update_data(student_id=student_id)
+
+
+@router.message(ChangeBalanceState.new_balance)
+async def checking_new_balance(message: Message, state: FSMContext):
+    new_balance_from_admin = message.text
+    student_id = await state.get_value("student_id")
+    old_balance = student_db.show_profile_data(student_id)[4]
+
+    try:
+        new_balance = float(new_balance_from_admin)
+        await message.answer(f"💰 Підтвердження зміни суми\n\nПоточна сума: {old_balance}\nНова сума: {new_balance}\n\nБудь ласка,перевірте дані та підтвердіть зміну.",
+                             reply_markup=confirm_change_balance(student_id,new_balance))
+    except ValueError:
+        await message.answer("Введіть число")
+
+@router.callback_query(F.data.startswith("accept_change_balance:"))
+async def confirm_new_balance(callback: CallbackQuery, state: FSMContext):
+    data = callback.data.split(":")
+    student_id = data[1]
+    new_balance = data[2]
+
+    success = student_db.change_balance_for_student(
+        telegram_id=student_id,
+        balance= new_balance
+    )
+
+    if success:
+        await callback.message.answer(
+            f"✅ Баланс успішно змінено на {new_balance} грн."
+
+        )
+        await callback.answer(" ")
+    else:
+        await callback.message.answer(
+            "❌ Не вдалося змінити баланс."
+        )
+
+    await state.clear()
+
+
+
+
+
+
+
 
 
 
