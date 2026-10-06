@@ -71,3 +71,9 @@ onetime_lesson_kb = InlineKeyboardMarkup(
     ]
 )
 
+slots_admin_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="➕ Додати новий слот"),KeyboardButton(text="🕦 Подивитися наявні слоти")],
+        [KeyboardButton(text="⬅️ Повернутися назад до Панелі")]
+    ],resize_keyboard=True
+)

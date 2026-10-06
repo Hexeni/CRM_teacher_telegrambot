@@ -672,3 +672,19 @@ class LessonRepo:
             return cursor.fetchone()
 
 
+    def add_new_slot(self,weekday: int,time: str,duration: int):
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+
+                cursor.execute("""
+                INSERT INTO requiring_slots(weekday,time_for_slot,duration_minutes)
+                VALUES (?,?,?)
+                
+                
+                """,(weekday, time, duration))
+            return True
+
+        except sqlite3.Error as e:
+            print(f"Помилка при додаванні слоту від адміна: {e}")
+            return False

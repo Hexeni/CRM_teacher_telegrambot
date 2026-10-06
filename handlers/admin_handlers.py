@@ -4,15 +4,15 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from config import days, id_teacher, HASH_OF_ADMIN
-from keyboards.keyboards import main_rp_keyboard, profile_keyboard, delay_lesson_kb, admin_keyboard_kb
-from keyboards.keyboards_builder import delay_lesson_keyboard, student_slots_keyboard, lesson_for_admin, lesson_admin_actions_kb
+from keyboards.keyboards import admin_keyboard_kb, slots_admin_kb
+from keyboards.keyboards_builder import delay_lesson_keyboard, student_slots_keyboard, lesson_for_admin, lesson_admin_actions_kb, show_weekdays, accept_new_slot
 from database.student_repo import StudentRepo
 from database.lesson_repo import LessonRepo
 from datetime import datetime, date
-from keyboards.keyboards_builder import   students_for_admin,confirm_lesson_kb, get_student_actions_keyboard,confirm_delete_student,confirm_change_balance
+from keyboards.keyboards_builder import   NewSlot,students_for_admin,confirm_lesson_kb, get_student_actions_keyboard,confirm_delete_student,confirm_change_balance
 from states.delay_lesson_state import Delay
 from states.cancel_lesson_state import Cancel
-from states.admins_states import AdminState, ChangeBalanceState
+from states.admins_states import AdminState, ChangeBalanceState, NewSlotState
 from handlers.base_handlers import student_db,lesson_db
 from Utilis.Date import Date
 from Utilis.Validator import Validator
@@ -353,16 +353,72 @@ async def confirm_new_balance(callback: CallbackQuery, state: FSMContext):
 
     await state.clear()
 
+@router.message(F.text == "🕦Слоти")
+async def show_slots_options(message: Message):
+    await message.answer("👇Оберіть кнопку",reply_markup=slots_admin_kb)
+
+@router.message(F.text == "➕ Додати новий слот")
+async def adding_new_slot(message: Message):
+    await message.answer("😀 Супер тепер спочатку оберіть на який день потрібно зарезервувати слот", reply_markup=show_weekdays())
+
+@router.message(F.text == "⬅️ Повернутися назад до Панелі")
+async def back_to_panel(message: Message):
+    await message.answer("👇Оберіть кнопку",reply_markup=admin_keyboard_kb)
+
+@router.callback_query(F.data.startswith("weekday_"))
+async def hour_for_new_slot(callback: CallbackQuery, state: FSMContext):
+    data = callback.data.split("_")
+    weekday = data[1]
+
+    await callback.message.edit_text("🕐 Введіть час початку слоту у форматі ГГ:ХХ:СС\n\nНаприклад: 14.00.00")
+    await state.set_state(NewSlotState.new_hour)
+    await state.update_data(day=weekday)
+
+@router.message(NewSlotState.new_hour)
+async def duration_for_slot(message: Message, state: FSMContext):
+    time_from_admin = message.text
+    try:
+        time = datetime.strptime(time_from_admin, "%H.%M.%S")
+        await state.update_data(hour=time_from_admin)
+        await message.answer("⏳ Супер тепер введіть скільки має тривати урок в хвилинах")
+        await state.set_state(NewSlotState.new_duration)
+    except ValueError:
+        await message.answer("Неправильний формат спробуй ще раз")
 
 
+@router.message(NewSlotState.new_duration)
+async def accepting_duration_for_slot(message: Message, state: FSMContext):
+    duration_from_admin = message.text
+    try:
+        duration = int(duration_from_admin)
+        if duration <= 120:
+            data = await state.get_data()
+            hour = data["hour"]
+            day = days[int(data["day"])]
+            message_for_admin = (
+                f"🆕 <b>Новий слот</b>\n\n"
+                f"📅 День: <b>{day}</b>\n"
+                f"🕐 Час: <b>{data['hour']}</b>\n"
+                f"⏱ Тривалість: <b>{duration} хв.</b>\n\n"
+                f"Перевірте дані та підтвердьте створення слоту 👇"
+            )
+            await message.answer(message_for_admin, parse_mode="HTML", reply_markup=accept_new_slot(data["day"], hour, duration))
+            await state.clear()
+        else:
+            await message.answer("Ви ввели завелике число")
+    except ValueError as e:
+        print(e)
+        await message.answer("Введіть число")
 
 
+@router.callback_query(NewSlot.filter())
+async def confirmation_new_slot(callback:CallbackQuery, callback_data: NewSlot):
+    weekday, time, duration = callback_data.weekday, callback_data.time.replace(".", ":"), callback_data.duration
+    if lesson_db.add_new_slot(weekday,time,duration):
+        await callback.message.answer("Новий слот додано ✅")
+    else:
+        await callback.message.answer("Нажаль сталася помикла ☹️")
 
-
-
-
-
-
-
-
-
+@router.callback_query(F.data =="decline_new_slot")
+async def decline_new_slot(callback: CallbackQuery):
+    await callback.message.answer("😉 Давайте спробуємо знову\nоберіть на який день потрібно зарезервувати слот",reply_markup=show_weekdays())

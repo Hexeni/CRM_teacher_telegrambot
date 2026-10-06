@@ -45,6 +45,11 @@ class OneTimeLessonCallback(CallbackData, prefix="one_time_lesson"):
     request_id: int
     student_id: int
 
+class NewSlot(CallbackData, prefix="new_slot"):
+    weekday: int
+    time: str
+    duration: int
+
 async def slots_keyboard(action: str, old_slot_id: int):
     builder = InlineKeyboardBuilder()
     slots = lesson_db.show_slots()
@@ -516,3 +521,33 @@ def confirm_change_balance(student_id,balance):
     builder.adjust(2)
     return builder.as_markup()
 
+def show_weekdays():
+    builder = InlineKeyboardBuilder()
+    for k,v in days.items():
+        builder.button(
+            text= v,
+            callback_data=f"weekday_{k}"
+        )
+
+    builder.adjust(1)
+    return builder.as_markup()
+
+def accept_new_slot(weekday: int, time: str, duration: int):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(
+        text="✅ Так,створити",
+        callback_data=NewSlot(
+            weekday=weekday,
+            time=time,
+            duration=duration
+        )
+    )
+
+    builder.button(
+        text="❌ Ні, змінити дані",
+        callback_data="decline_new_slot"
+    )
+
+    builder.adjust(2)
+    return builder.as_markup()

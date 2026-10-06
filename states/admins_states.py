@@ -6,4 +6,7 @@ class AdminState(StatesGroup):
 class ChangeBalanceState(StatesGroup):
     new_balance = State()
 
+class NewSlotState(StatesGroup):
+    new_hour = State()
+    new_duration = State()
 
