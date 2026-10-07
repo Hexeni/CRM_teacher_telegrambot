@@ -28,7 +28,7 @@ async def loging(message: Message, state: FSMContext):
             await state.set_state(Log.password)
             await message.answer("Введіть будь ласка свій пароль: ")
         else:
-            await message.answer("Ви вже в своєму аккаунті")
+            await message.answer("Ви вже в своєму аккаунті", reply_markup=main_rp_keyboard)
     else:
         await message.answer("Схоже ви ще не зареєструвалися на нашій платформі щоб це змінити пропишіть комнаду /reg")
 

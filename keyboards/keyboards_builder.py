@@ -7,7 +7,7 @@ from datetime import date, timedelta, datetime
 
 
 
-class SlotCallback(CallbackData, prefix="lesson"):
+class SlotCallback(CallbackData, prefix="manage_slot"):
     action: str
     slot_id : int
 
@@ -483,6 +483,10 @@ def get_student_actions_keyboard(student_id):
         url=f"https://t.me/{username}"
     )
     builder.button(
+        text="📅 Уроки учня",
+        callback_data=f"lessons_for_student:{student_id}"
+    )
+    builder.button(
         text="⬅️ Назад до учнів",
         callback_data=f"students_page_0"
     )
@@ -550,4 +554,79 @@ def accept_new_slot(weekday: int, time: str, duration: int):
     )
 
     builder.adjust(2)
+    return builder.as_markup()
+
+def slots_for_admin():
+    slots = lesson_db.show_slots()
+    builder = InlineKeyboardBuilder()
+    for slot in slots:
+        id ,weekday,status,time_for_slot,duration_minutes = slot
+        left_part = f"{days[int(weekday)]} о {time_for_slot}"
+        text = (
+            f"{left_part.ljust(25)} | "
+            f"{'✅ вільний' if status == 'free' else '❌ зайнятий'}"
+        )
+        builder.button(
+            text = text,
+            callback_data= SlotCallback(
+                action= "manage_slot",
+                slot_id = id
+            )
+        )
+    builder.adjust(1)
+
+    return builder.as_markup()
+
+def manage_slot_keyboard(slot_id: int, status: str):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(
+        text="🗑️ Видалити слот",
+        callback_data=f"admin_delete_slot:{slot_id}"
+    )
+    builder.button(
+        text="⏲️ Змінити час",
+        callback_data=f"change_time_slot:{slot_id}"
+    )
+    builder.button(
+        text="🕦 змінити тривалість",
+        callback_data=f"change_duration_slot:{slot_id}"
+    )
+
+    if status == 'free':
+        builder.button(
+            text="🙋‍♂️ Привязати слот до учня",
+            callback_data=f"slot_for_student:{slot_id}"
+        )
+    else:
+        builder.button(
+            text="🙅‍♀️ Звільнити слот",
+            callback_data=f"admin_release_slot:{slot_id}"
+        )
+
+    builder.button(
+        text="⬅️ Назад до слотів",
+        callback_data=f"back_to_slot_admin"
+    )
+
+    builder.adjust(2)
+
+    return builder.as_markup()
+
+def accept_delete_slot_keyboard(slot_id: int):
+    builder = InlineKeyboardBuilder()
+
+    builder.button(
+        text="✅ Підтвердити видалення слоту",
+        callback_data=f"accept_delete_slot:{slot_id}"
+    )
+
+    builder.button(
+        text="❌ Відмінити слот",
+        callback_data="decline_delete_slot"
+
+    )
+
+    builder.adjust(2)
+
     return builder.as_markup()

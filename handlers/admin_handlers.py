@@ -5,11 +5,12 @@ from aiogram.fsm.context import FSMContext
 
 from config import days, id_teacher, HASH_OF_ADMIN
 from keyboards.keyboards import admin_keyboard_kb, slots_admin_kb
-from keyboards.keyboards_builder import delay_lesson_keyboard, student_slots_keyboard, lesson_for_admin, lesson_admin_actions_kb, show_weekdays, accept_new_slot
+from keyboards.keyboards_builder import manage_slot_keyboard, lesson_for_admin, lesson_admin_actions_kb, show_weekdays, \
+    accept_new_slot, slots_for_admin,  accept_delete_slot_keyboard
 from database.student_repo import StudentRepo
 from database.lesson_repo import LessonRepo
 from datetime import datetime, date
-from keyboards.keyboards_builder import   NewSlot,students_for_admin,confirm_lesson_kb, get_student_actions_keyboard,confirm_delete_student,confirm_change_balance
+from keyboards.keyboards_builder import   SlotCallback,NewSlot,students_for_admin,confirm_lesson_kb, get_student_actions_keyboard,confirm_delete_student,confirm_change_balance
 from states.delay_lesson_state import Delay
 from states.cancel_lesson_state import Cancel
 from states.admins_states import AdminState, ChangeBalanceState, NewSlotState
@@ -221,6 +222,35 @@ async def show_students(message: Message):
     else:
         await message.answer(text="Сталася якась помилка")
 
+@router.callback_query(F.data.startswith("lessons_for_student:"))
+async def show_students_lessons(callback: CallbackQuery):
+    data = callback.data.split(":")
+    id = data[1]
+    name = student_db.show_profile_data(id)[0]
+    lesson_message = f"📚 <b> Уроки для: {name}</b>\n\n"
+    lessons = lesson_db.show_lesson_for_student(id)
+    if lessons:
+        sorted_lessons = sorted(lessons, key=lambda lesson: lesson[3])
+        number = 1
+        for lesson in sorted_lessons:
+            restricted_status = ("canceled", "pending_one_time_lesson", "reject_onetime_lesson")
+            if lesson[7] != 1 and lesson[6] not in restricted_status:
+                year, month, rest = lesson[3].split("-")
+                day, time = rest.split(" ")
+
+                formatted = (
+                    f"{number}. 📅 <b>{day}.{month}.{year}</b> о <b>{time[:5]}</b>\n    статус: {'не оплачений 🔴' if lesson[5] == 0 else 'оплачений 🟢'}\n"
+                    f"    🇺🇦 За Київським часом\n\n"
+                )
+                lesson_message += formatted
+                number += 1
+
+        await callback.message.edit_text(lesson_message, parse_mode="HTML")
+    else:
+        await callback.message.edit_text("☹️ Ще не має уроків в цього учня")
+
+
+
 @router.callback_query(F.data.startswith("students_page_"))
 async def change_students_page(callback: CallbackQuery):
 
@@ -422,3 +452,65 @@ async def confirmation_new_slot(callback:CallbackQuery, callback_data: NewSlot):
 @router.callback_query(F.data =="decline_new_slot")
 async def decline_new_slot(callback: CallbackQuery):
     await callback.message.answer("😉 Давайте спробуємо знову\nоберіть на який день потрібно зарезервувати слот",reply_markup=show_weekdays())
+
+@router.message(F.text == "🕦 Подивитися наявні слоти")
+async def show_slots_for_admin(message: Message):
+    await message.answer("Ось всі слоти: ", reply_markup=slots_for_admin())
+
+@router.callback_query(SlotCallback.filter(F.action == "manage_slot"))
+async def manage_slot(callback: CallbackQuery, callback_data: SlotCallback):
+    slot_id = callback_data.slot_id
+    slot_info = lesson_db.show_slot(slot_id)
+    if len(slot_info) > 0:
+        student_info = lesson_db.show_student_for_slot(slot_id)
+        if student_info:
+            student_id, student_login = student_info
+            student_name = student_db.show_profile_data(student_id)[0]
+        else:
+            student_name = " "
+        id, weekday, status, time_for_slot, duration_minutes = slot_info
+        slot_text = (
+            f"🗓 <b>Інформація про слот</b>\n\n"
+            f"📅 День: <b>{days[int(weekday)]}</b>\n"
+            f"🕐 Час: <b>{time_for_slot}</b>\n"
+            f"⏱ Тривалість: <b>{duration_minutes} хв.</b>\n"
+        )
+
+        if status == "free":
+            slot_text += (
+                f"📌 Статус: <b>✅ Вільний</b>"
+            )
+        else:
+            slot_text += (
+                f"📌 Статус: <b>❌ Зайнятий</b>\n"
+                f"👤 Учень: <b>{student_name}</b>"
+            )
+    else:
+        slot_text = "❌ Помилка слот не знайдено"
+
+    await callback.message.edit_text(slot_text, parse_mode="HTML", reply_markup=manage_slot_keyboard(slot_id, slot_info[2]))
+
+@router.callback_query(F.data == "back_to_slot_admin")
+async def back_to_slot_admin(callback: CallbackQuery):
+    await callback.message.edit_text("Ось всі слоти: ", reply_markup=slots_for_admin())
+
+@router.callback_query(F.data.startswith("admin_delete_slot:"))
+async def delete_slot(callback: CallbackQuery):
+    data = callback.data.split(":")
+    slot_id = data[1]
+    text = """
+    ⚠️ Ви впевнені, що хочете видалити цей слот?
+
+Усі майбутні уроки, пов’язані з цим слотом, також будуть скасовані.
+    """
+    await callback.message.edit_text(text, reply_markup=accept_delete_slot_keyboard(int(slot_id)))
+
+
+@router.callback_query(F.data.startswith("accept_delete_slot"))
+async def accept_delete_slot(callback: CallbackQuery):
+    data = callback.data.split(":")
+    slot_id = data[1]
+    if lesson_db.delete_slot_for_student(slot_id):
+        await callback.message.edit_text("😉Слот та майбутні уроки були видалені")
+    else:
+        await callback.message.edit_text("❌Нажаль сталася якась помилка зверніться до підтримки")

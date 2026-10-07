@@ -145,7 +145,7 @@ async def sending_new_account_data(message: Message, state: FSMContext):
                 )
                 return
             await state.update_data(password=hash_pass)
-            username = student_db.get_student(message.from_user.id)[0][2]
+            username = student_db.get_student(message.from_user.id)[2]
             await message.bot.send_message(chat_id=id_admin, text=f"""
             Учень {username} хоче змінити пароль
             Ви підтверджуєте це??

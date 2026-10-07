@@ -198,4 +198,6 @@ async def pay_selected_lessons(callback: CallbackQuery, state: FSMContext):
         await callback.message.edit_text("""
                 Нажаль сталася помилка, перевірте чи достатньо коштів у вас на балансі або зверніться до тех підтримки
                 """)
-
+@router.callback_query(F.data == "cancel_lesson_payment")
+async def cancel_payment_selected_lessons(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text("Оплата уроків скасована❌")

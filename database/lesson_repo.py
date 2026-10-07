@@ -35,6 +35,18 @@ class LessonRepo:
             """, (slot_id,))
             return query.fetchone()
 
+    def show_student_for_slot(self, slot_id: int):
+        with sqlite3.connect(self.db_name) as conn:
+            cursor = conn.cursor()
+            query = cursor.execute("""
+            SELECT sa.telegr_id, sa.login
+            FROM students_accounts sa 
+            JOIN requiring_slots_students rss
+            ON rss.student_id = sa.telegr_id
+            WHERE rss.id_of_slot = ?
+            """,(slot_id,))
+            return query.fetchone()
+
     def show_free_slots(self):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
@@ -688,3 +700,24 @@ class LessonRepo:
         except sqlite3.Error as e:
             print(f"Помилка при додаванні слоту від адміна: {e}")
             return False
+
+    def delete_slot_for_student(self, slot_id: int):
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+
+                cursor.execute("""
+                DELETE FROM lessons
+                WHERE slot_id = ?
+                AND is_in_past = 0
+                """, (slot_id))
+
+                cursor.execute("""
+                DELETE FROM requiring_slots
+                WHERE id = ?
+                    """, (slot_id,))
+
+                return  True
+
+        except Exception as e:
+            print(f"Помилка при видалені слота: {e}")

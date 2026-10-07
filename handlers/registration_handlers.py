@@ -19,7 +19,7 @@ async def name_reg(message: Message, state:FSMContext):
         await message.answer("Для початку введи своє прізвище та імя:")
     else:
         await state.clear()
-        await message.answer("Схоже ви вже зареєстрвоані в системі, щоб увійти в свій аккаунт нажміть на мій Профіль")
+        await message.answer("Схоже ви вже зареєстрвоані в системі, щоб увійти в свій аккаунт нажміть на мій Профіль", reply_markup=main_rp_keyboard)
 
 @router.message(Reg.name)
 async def name_reg(message: Message, state:FSMContext):
