@@ -44,7 +44,7 @@ async def view_my_profile(message: Message):
             student_db.update_activity(message.from_user.id)
             data_student = student_db.show_profile_data(message.from_user.id)
             data_lessons = lesson_db.show_lesson_for_student(message.from_user.id)
-            future_lessons = [l for l in data_lessons if l[-1] != 1]
+            future_lessons = [l for l in data_lessons if l[-1] != 1 and l[6] != 'canceled']
 
             if future_lessons:
                 latest_lesson = min(
@@ -88,6 +88,7 @@ async def view_my_profile(message: Message):
 async def show_students_lessons(message: Message):
     lesson_message = "📚 <b>Твої уроки:</b>\n\n"
     lessons = lesson_db.show_lesson_for_student(message.from_user.id)
+    print(lessons)
     if lessons:
         sorted_lessons = sorted(lessons, key=lambda lesson: lesson[3])
         number = 1
@@ -117,15 +118,25 @@ async def delay_lesson(message: Message):
     user_id = message.from_user.id
     lessons = lesson_db.show_lesson_for_student(user_id)
     if lessons:
-        await message.answer("""
-    Оберіть, що саме ви хочете зробити:
-    
-    1️⃣ Перенести урок (одноразово)  
-    — змінити дату тільки цього уроку
-    
-    2️⃣ Змінити слот уроку  
-    — змінити постійний час занять
-        """, reply_markup=delay_lesson_kb)
+
+        text = (
+            "📚 <b>Керування заняттями</b>\n\n"
+            "Оберіть, яку дію ви хочете виконати:\n\n"
+
+            "📅 <b>Перенести урок</b>\n"
+            "Змінити дату або час одного заняття.\n\n"
+
+            "✏️ <b>Змінити слот</b>\n"
+            "Змінити постійний день або час занять.\n\n"
+
+            "❌ <b>Скасувати урок</b>\n"
+            "Скасувати лише одне заняття.\n\n"
+
+            "🗑 <b>Видалити слот</b>\n"
+            "Видалити регулярний слот і всі майбутні заняття."
+        )
+
+        await message.answer(text,reply_markup=delay_lesson_kb, parse_mode="HTML")
     else:
         await message.answer(
             "❌ У вас наразі немає активних слотів.\n\n"

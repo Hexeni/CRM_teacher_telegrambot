@@ -16,8 +16,8 @@ profile_keyboard = InlineKeyboardMarkup(inline_keyboard= [
 ])
 
 delay_lesson_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="Змінити урок", callback_data="delay_slots"), InlineKeyboardButton(text="Перенести урок",callback_data="delay_lesson")],
-[InlineKeyboardButton(text="відмінити слот", callback_data="reject_slot"), InlineKeyboardButton(text="відмінити урок", callback_data="cancel_lesson")]
+    [InlineKeyboardButton(text="✏️ Змінити слот", callback_data="delay_slots"), InlineKeyboardButton(text="📅 Перенести урок",callback_data="delay_lesson")],
+[InlineKeyboardButton(text="🗑 Видалити слот", callback_data="reject_slot"), InlineKeyboardButton(text="❌ Скасувати урок", callback_data="cancel_lesson")]
 ])
 
 settings_user_keyboard = ReplyKeyboardMarkup(keyboard=[

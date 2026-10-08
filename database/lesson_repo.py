@@ -44,7 +44,7 @@ class LessonRepo:
             JOIN requiring_slots_students rss
             ON rss.student_id = sa.telegr_id
             WHERE rss.id_of_slot = ?
-            """,(slot_id,))
+            """, (slot_id,))
             return query.fetchone()
 
     def show_free_slots(self):
@@ -173,7 +173,6 @@ class LessonRepo:
                 # 7. Обчислюємо дату першого уроку
                 now = datetime.now()
 
-
                 python_weekday = weekday - 1
 
                 time_parts = time_for_slot.split(":")
@@ -247,9 +246,6 @@ class LessonRepo:
                 print(f"Помилка під час зміни слота: {error}")
 
                 return False
-
-
-
 
     def approve_slot_and_create_lesson(self, slot_id, student_id, datetime_of_begining, datetime_of_ending):
         with sqlite3.connect(self.db_name) as conn:
@@ -386,7 +382,7 @@ class LessonRepo:
 
             return query
 
-    def update_lesson(self, lesson_id: int, new_date: str, new_date_end: str, accept = True):
+    def update_lesson(self, lesson_id: int, new_date: str, new_date_end: str, accept=True):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
 
@@ -396,9 +392,9 @@ class LessonRepo:
                            SET status = ?
                            WHERE lesson_id = ?
                        """, (
-                        "accept" if accept else "reject",
-                        lesson_id
-                    ))
+                    "accept" if accept else "reject",
+                    lesson_id
+                ))
                 if accept:
                     # 3. Оновлюємо сам урок
                     cursor.execute("""
@@ -420,7 +416,7 @@ class LessonRepo:
                 conn.rollback()
                 raise
 
-    def create_rescheduled_request(self,lesson_id: int, new_start: str, reason: str):
+    def create_rescheduled_request(self, lesson_id: int, new_start: str, reason: str):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
             old_lesson = cursor.execute("""
@@ -429,14 +425,13 @@ class LessonRepo:
                                    WHERE lesson_id = ?
                                """, (lesson_id,)).fetchone()[0]
 
-
             query = cursor.execute("""
             INSERT INTO resheduled_lessons VALUES(?,?,?,?,?)
-            """, (lesson_id,old_lesson, new_start, reason, "waiting"))
+            """, (lesson_id, old_lesson, new_start, reason, "waiting"))
 
         conn.commit()
 
-    def create_cancel_request(self, lesson_id,reason,canceled_by):
+    def create_cancel_request(self, lesson_id, reason, canceled_by):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
             old_lesson = cursor.execute("""
@@ -456,10 +451,9 @@ class LessonRepo:
             status,
             cancelled_by
             ) VALUES(?,?,?,?,?,?)
-            """, (lesson_id,start_time,end_time,reason,"unproved",canceled_by))
+            """, (lesson_id, start_time, end_time, reason, "unproved", canceled_by))
 
-
-    def cancel_lesson(self,lesson_id, accepted = True):
+    def cancel_lesson(self, lesson_id, accepted=True):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
             old_lesson = cursor.execute("""
@@ -483,8 +477,6 @@ class LessonRepo:
                     SET status = "canceled"
                     WHERE lesson_id = ?
                     """, (lesson_id,))
-
-
 
                 conn.commit()
 
@@ -536,7 +528,7 @@ class LessonRepo:
 
         KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
-        if hours_before not in (1,4,24):
+        if hours_before not in (1, 4, 24):
             raise ValueError("hours_before має бути 1, 4 або 24")
 
         now = datetime.now(KYIV_TZ)
@@ -567,11 +559,9 @@ class LessonRepo:
             AND start_time BETWEEN ? AND ?
             ORDER BY start_time
             """, (window_start.strftime("%Y-%m-%d %H:%M:%S"),
-                window_end.strftime("%Y-%m-%d %H:%M:%S")))
+                  window_end.strftime("%Y-%m-%d %H:%M:%S")))
 
             return cursor.fetchall()
-
-
 
     def mark_reminder_as_sent(self, lesson_id: int, time: int):
         columns = {
@@ -596,8 +586,7 @@ class LessonRepo:
 
             return cursor.rowcount > 0
 
-
-    def request_onetimelesson(self,student_id: int,start_time: str, end_time: str):
+    def request_onetimelesson(self, student_id: int, start_time: str, end_time: str):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
 
@@ -623,7 +612,7 @@ class LessonRepo:
             lesson_id = cursor.lastrowid
             return lesson_id
 
-    def change_status_for_one_time_lesson(self,lesson_id: int, status: str):
+    def change_status_for_one_time_lesson(self, lesson_id: int, status: str):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
 
@@ -634,7 +623,6 @@ class LessonRepo:
             """, (status, lesson_id,))
 
             return cursor.rowcount > 0
-
 
     def get_lessons_by_date(self, today_date: date):
         with sqlite3.connect(self.db_name) as conn:
@@ -656,7 +644,7 @@ class LessonRepo:
             AND
                 l.status != 'canceled'
             ORDER BY l.start_time
-            """,(date_str,))
+            """, (date_str,))
 
             return cursor.fetchall()
 
@@ -683,8 +671,7 @@ class LessonRepo:
 
             return cursor.fetchone()
 
-
-    def add_new_slot(self,weekday: int,time: str,duration: int):
+    def add_new_slot(self, weekday: int, time: str, duration: int):
         try:
             with sqlite3.connect(self.db_name) as conn:
                 cursor = conn.cursor()
@@ -694,7 +681,7 @@ class LessonRepo:
                 VALUES (?,?,?)
                 
                 
-                """,(weekday, time, duration))
+                """, (weekday, time, duration))
             return True
 
         except sqlite3.Error as e:
@@ -707,17 +694,58 @@ class LessonRepo:
                 cursor = conn.cursor()
 
                 cursor.execute("""
+                SELECT sa.telegr_id,sa.balance, sa.price_for_lesson
+                FROM requiring_slots rs
+                LEFT JOIN requiring_slots_students rss
+                    ON rss.id_of_slot = rs.id
+                LEFT JOIN students_accounts sa
+                    ON sa.telegr_id = rss.student_id
+                WHERE rs.id = ?
+                            """, (slot_id,))
+
+                info = cursor.fetchone()
+                if info is None:
+                    return False
+                telegr_id, balance, price_for_lesson = info
+
+                if telegr_id is not None:
+
+                    cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM lessons
+                    WHERE slot_id = ?
+                    AND is_in_past = 0
+                    AND is_paid = 1
+                    """,(slot_id,))
+
+                    lessons_count = cursor.fetchone()[0]
+                    refund_amount = lessons_count * price_for_lesson
+
+                    if refund_amount > 0:
+                        cursor.execute("""
+                        UPDATE students_accounts
+                        SET balance = balance + ?
+                        WHERE telegr_id = ?
+                        """, (refund_amount, telegr_id))
+
+                cursor.execute("""
                 DELETE FROM lessons
                 WHERE slot_id = ?
                 AND is_in_past = 0
-                """, (slot_id))
+                """, (slot_id,))
+
+                cursor.execute("""
+                DELETE FROM requiring_slots_students
+                WHERE id_of_slot = ?
+                """, (slot_id,))
 
                 cursor.execute("""
                 DELETE FROM requiring_slots
                 WHERE id = ?
-                    """, (slot_id,))
+                """, (slot_id,))
 
-                return  True
+                return True
 
         except Exception as e:
             print(f"Помилка при видалені слота: {e}")
+            return False
